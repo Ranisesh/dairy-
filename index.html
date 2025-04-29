@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LifeCards - My Cards & Diary</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f4ef;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #0077cc;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+    #card, #diary {
+      background: white;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      min-height: 200px;
+    }
+    textarea, input {
+      width: 90%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+    #nav-buttons {
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>LifeCards - My Cards & Diary</h1>
+
+<div>
+  <button onclick="newCard()">New Card</button>
+  <button onclick="newDiary()">New Diary Entry</button>
+  <button onclick="showTodayDiary()">Today’s Diary</button>
+</div>
+
+<div id="card" style="display: none;">
+  <input type="text" id="cardTitle" placeholder="Card Title"><br>
+  <textarea id="cardContent" placeholder="Card Content"></textarea><br>
+</div>
+
+<div id="diary" style="display: none;">
+  <input type="text" id="diaryDate" disabled><br>
+  <textarea id="diaryContent" placeholder="Write your diary here..."></textarea><br>
+</div>
+
+<div id="nav-buttons">
+  <button onclick="prevCard()"><< Previous</button>
+  <button onclick="nextCard()">Next >></button>
+  <button onclick="saveAll()">Save</button>
+</div>
+
+<div style="margin-top: 30px;">
+  <button onclick="downloadBackup()">Backup</button>
+</div>
+
+<script>
+let cards = JSON.parse(localStorage.getItem('cards')) || [];
+let diaries = JSON.parse(localStorage.getItem('diaries')) || [];
+let currentIndex = 0;
+
+function newCard() {
+  document.getElementById('card').style.display = 'block';
+  document.getElementById('diary').style.display = 'none';
+  document.getElementById('cardTitle').value = '';
+  document.getElementById('cardContent').value = '';
+}
+
+function newDiary() {
+  document.getElementById('diary').style.display = 'block';
+  document.getElementById('card').style.display = 'none';
+  let today = new Date().toISOString().split('T')[0];
+  document.getElementById('diaryDate').value = today;
+  document.getElementById('diaryContent').value = '';
+}
+
+function showTodayDiary() {
+  document.getElementById('diary').style.display = 'block';
+  document.getElementById('card').style.display = 'none';
+  let today = new Date().toISOString().split('T')[0];
+  document.getElementById('diaryDate').value = today;
+  let found = diaries.find(d => d.date === today);
+  document.getElementById('diaryContent').value = found ? found.content : '';
+}
+
+function saveAll() {
+  if (document.getElementById('card').style.display === 'block') {
+    let title = document.getElementById('cardTitle').value.trim();
+    let content = document.getElementById('cardContent').value.trim();
+    if (title || content) {
+      cards.push({title, content});
+      localStorage.setItem('cards', JSON.stringify(cards));
+      alert('Card saved!');
+    }
+  }
+  if (document.getElementById('diary').style.display === 'block') {
+    let date = document.getElementById('diaryDate').value;
+    let content = document.getElementById('diaryContent').value.trim();
+    if (content) {
+      let index = diaries.findIndex(d => d.date === date);
+      if (index !== -1) {
+        diaries[index].content = content;
+      } else {
+        diaries.push({date, content});
+      }
+      localStorage.setItem('diaries', JSON.stringify(diaries));
+      alert('Diary saved!');
+    }
+  }
+}
+
+function prevCard() {
+  if (cards.length === 0) return;
+  currentIndex = (currentIndex - 1 + cards.length) % cards.length;
+  showCard();
+}
+
+function nextCard() {
+  if (cards.length === 0) return;
+  currentIndex = (currentIndex + 1) % cards.length;
+  showCard();
+}
+
+function showCard() {
+  if (cards.length === 0) {
+    alert('No cards yet!');
+    return;
+  }
+  document.getElementById('card').style.display = 'block';
+  document.getElementById('diary').style.display = 'none';
+  let card = cards[currentIndex];
+  document.getElementById('cardTitle').value = card.title;
+  document.getElementById('cardContent').value = card.content;
+}
+
+function downloadBackup() {
+  let data = {
+    cards: cards,
+    diaries: diaries
+  };
+  let blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  let link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'lifecards_backup.json';
+  link.click();
+}
+</script>
+
+</body>
+</html>
